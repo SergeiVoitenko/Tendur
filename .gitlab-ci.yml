@@ -1,0 +1,74 @@
+# Определение этапов CI/CD
+stages:
+  - build
+  - test
+  - deploy
+
+# Кэширование для ускорения процесса
+cache:
+  paths:
+    - node_modules/
+
+# Этап сборки: подготовка и проверка проекта
+build:
+  stage: build
+  image: node:16-alpine
+  script:
+    - npm install
+    - echo "Сборка успешно завершена"
+  artifacts:
+    paths:
+      - node_modules/
+    expire_in: 1 hour
+
+# Этап тестирования: запуск тестов
+test:
+  stage: test
+  image: node:16-alpine
+  script:
+    - npm test
+    - echo "Все тесты успешно пройдены"
+  dependencies:
+    - build
+
+# Сборка Docker образа
+build_docker:
+  stage: build
+  image: docker:20.10.16
+  services:
+    - docker:20.10.16-dind
+  variables:
+    DOCKER_TLS_CERTDIR: "/certs"
+  script:
+    - docker build -t my-node-app:latest .
+    - echo "Docker образ успешно собран"
+  only:
+    - main
+    - master
+
+# Этап деплоя на тестовую среду
+deploy_staging:
+  stage: deploy
+  image: alpine:latest
+  script:
+    - echo "Деплой на тестовую среду"
+    - echo "Для реального деплоя здесь должен быть код, отправляющий ваше приложение на сервер"
+  only:
+    - main
+    - master
+  environment:
+    name: staging
+
+# Этап деплоя на продакшн (с ручным запуском для безопасности)
+deploy_production:
+  stage: deploy
+  image: alpine:latest
+  script:
+    - echo "Деплой на продакшн"
+    - echo "Для реального деплоя здесь должен быть код, отправляющий ваше приложение на продакшн сервер"
+  only:
+    - main
+    - master
+  when: manual
+  environment:
+    name: production
